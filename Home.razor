@@ -1,0 +1,40 @@
+@page "/"
+@inject EventService EventService
+
+<PageTitle>EventEase — Upcoming Events</PageTitle>
+
+<div class="page-header">
+    <h1>Upcoming Corporate & Tech Events</h1>
+    <p>Browse upcoming events, customize details live, or reserve your tickets.</p>
+</div>
+
+<div class="search-bar">
+    <input placeholder="Filter events by title or location..."
+           @bind="SearchTerm"
+           @bind:event="oninput"
+           class="form-input" />
+</div>
+
+<div class="events-grid">
+    @foreach (var ev in FilteredEvents)
+    {
+        <EventCard @key="ev.Id" Event="ev" />
+    }
+</div>
+
+@code {
+    private List<Event> _events = new();
+    private string SearchTerm { get; set; } = string.Empty;
+
+    private IEnumerable<Event> FilteredEvents =>
+        string.IsNullOrWhiteSpace(SearchTerm)
+            ? _events
+            : _events.Where(e =>
+                e.Title.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                e.Location.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase));
+
+    protected override void OnInitialized()
+    {
+        _events = EventService.GetAllEvents();
+    }
+}

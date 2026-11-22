@@ -1,0 +1,91 @@
+@page "/register/{EventId:int}"
+@inject EventService EventService
+@inject UserSessionService UserSession
+@inject AttendanceService AttendanceService
+@inject NavigationManager Navigation
+
+<PageTitle>Register — EventEase</PageTitle>
+
+@if (TargetEvent is null)
+{
+    <div class="not-found-card">
+        <h2>Invalid Event</h2>
+        <p>Cannot register because event #@EventId does not exist.</p>
+        <a class="btn btn-primary" href="/">Browse Valid Events</a>
+    </div>
+}
+else if (IsSubmitted)
+{
+    <div class="success-card">
+        <h2>Registration Confirmed!</h2>
+        <p>Thank you, <strong>@Registration.FullName</strong>. You reserved <strong>@Registration.Tickets</strong> ticket(s) for <strong>@TargetEvent.Title</strong>.</p>
+        <div class="card-actions">
+            <a class="btn btn-primary" href="/attendance">View Attendance Tracker</a>
+            <a class="btn btn-secondary" href="/">Return to Events</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="form-card">
+        <h1>Register for @TargetEvent.Title</h1>
+        <p class="event-meta">@TargetEvent.Date.ToString("MMMM dd, yyyy") • @TargetEvent.Location</p>
+
+        <EditForm Model="@Registration" OnValidSubmit="HandleValidSubmit" FormName="EventRegistrationForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-errors" />
+
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <InputText id="fullName" @bind-Value="Registration.FullName" class="form-input" />
+                <ValidationMessage For="@(() => Registration.FullName)" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <InputText id="email" @bind-Value="Registration.Email" class="form-input" />
+                <ValidationMessage For="@(() => Registration.Email)" />
+            </div>
+
+            <div class="form-group">
+                <label for="tickets">Number of Tickets (1–10)</label>
+                <InputNumber id="tickets" @bind-Value="Registration.Tickets" class="form-input" />
+                <ValidationMessage For="@(() => Registration.Tickets)" />
+            </div>
+
+            <div class="card-actions">
+                <button type="submit" class="btn btn-primary">Complete Registration</button>
+                <a class="btn btn-secondary" href="/events/@TargetEvent.Id">Cancel</a>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int EventId { get; set; }
+
+    private Event? TargetEvent { get; set; }
+    private RegistrationModel Registration { get; set; } = new();
+    private bool IsSubmitted { get; set; } = false;
+
+    protected override void OnInitialized()
+    {
+        TargetEvent = EventService.GetEventById(EventId);
+        Registration.EventId = EventId;
+
+        if (UserSession.IsLoggedIn)
+        {
+            Registration.FullName = UserSession.CurrentUserName ?? string.Empty;
+            Registration.Email = UserSession.CurrentUserEmail ?? string.Empty;
+        }
+    }
+
+    private void HandleValidSubmit()
+    {
+        AttendanceService.RegisterAttendee(Registration);
+        UserSession.SetUserSession(Registration.FullName, Registration.Email);
+        UserSession.RecordEventRegistration(EventId);
+        IsSubmitted = true;
+    }
+}

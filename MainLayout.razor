@@ -1,0 +1,41 @@
+@inherits LayoutComponentBase
+@inject UserSessionService UserSession
+@implements IDisposable
+
+<div class="app-shell">
+    <header class="top-nav">
+        <div class="nav-brand">
+            <a href="/">EventEase</a>
+        </div>
+        <nav class="nav-links">
+            <NavLink href="/" Match="NavLinkMatch.All">Events</NavLink>
+            <NavLink href="/attendance">Attendance Tracker</NavLink>
+        </nav>
+        <div class="session-badge">
+            @if (UserSession.IsLoggedIn)
+            {
+                <span>Signed in as <strong>@UserSession.CurrentUserName</strong> (@UserSession.RegisteredEventIds.Count registered)</span>
+            }
+            else
+            {
+                <span>Guest Session</span>
+            }
+        </div>
+    </header>
+
+    <main class="main-content">
+        @Body
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        UserSession.OnSessionChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        UserSession.OnSessionChanged -= StateHasChanged;
+    }
+}

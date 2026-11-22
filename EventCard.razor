@@ -1,0 +1,50 @@
+@inject AttendanceService AttendanceService
+
+<div class="event-card">
+    <div class="event-card-header">
+        <h3>@Event.Title</h3>
+        <span class="badge">@RegisteredCount / @Event.Capacity Spots Filled</span>
+    </div>
+
+    @if (IsEditing)
+    {
+        <div class="inline-edit-form">
+            <label>
+                Title:
+                <input @bind="Event.Title" @bind:event="oninput" class="form-input" />
+            </label>
+            <label>
+                Date:
+                <input type="date" @bind="Event.Date" class="form-input" />
+            </label>
+            <label>
+                Location:
+                <input @bind="Event.Location" @bind:event="oninput" class="form-input" />
+            </label>
+            <button class="btn btn-secondary" @onclick="ToggleEdit">Done Editing</button>
+        </div>
+    }
+    else
+    {
+        <p class="event-meta"><strong>Date:</strong> @Event.Date.ToString("MMMM dd, yyyy")</p>
+        <p class="event-meta"><strong>Location:</strong> @Event.Location</p>
+        <p class="event-desc">@Event.Description</p>
+
+        <div class="card-actions">
+            <a class="btn btn-outline" href="/events/@Event.Id">View Details</a>
+            <a class="btn btn-primary" href="/register/@Event.Id">Register</a>
+            <button class="btn btn-secondary" @onclick="ToggleEdit">Quick Edit</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public Event Event { get; set; } = new();
+
+    private bool IsEditing { get; set; } = false;
+
+    private int RegisteredCount => AttendanceService.GetTotalTicketsForEvent(Event.Id);
+
+    private void ToggleEdit() => IsEditing = !IsEditing;
+}

@@ -1,0 +1,71 @@
+@page "/attendance"
+@inject EventService EventService
+@inject AttendanceService AttendanceService
+@implements IDisposable
+
+<PageTitle>Attendance Tracker — EventEase</PageTitle>
+
+<div class="page-header">
+    <h1>Event Attendance Tracker</h1>
+    <p>Monitor live ticket registrations and check-in attendees across all scheduled events.</p>
+</div>
+
+@foreach (var ev in EventService.GetAllEvents())
+{
+    var attendees = AttendanceService.GetAttendeesForEvent(ev.Id);
+    var totalTickets = AttendanceService.GetTotalTicketsForEvent(ev.Id);
+
+    <div class="attendance-section">
+        <div class="event-card-header">
+            <h2>@ev.Title</h2>
+            <span class="badge">@totalTickets / @ev.Capacity Registered</span>
+        </div>
+
+        @if (!attendees.Any())
+        {
+            <p class="empty-state">No attendees registered yet. <a href="/register/@ev.Id">Register now</a>.</p>
+        }
+        else
+        {
+            <table class="attendance-table">
+                <thead>
+                    <tr>
+                        <th>Attendee</th>
+                        <th>Email</th>
+                        <th>Tickets</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in attendees)
+                    {
+                        <tr>
+                            <td>@record.AttendeeName</td>
+                            <td>@record.AttendeeEmail</td>
+                            <td>@record.Tickets</td>
+                            <td>@(record.CheckedIn ? "Checked In" : "Confirmed")</td>
+                            <td>
+                                <button class="btn btn-outline" @onclick="() => AttendanceService.ToggleCheckIn(record)">
+                                    @(record.CheckedIn ? "Undo Check-In" : "Check In")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        AttendanceService.OnAttendanceUpdated += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        AttendanceService.OnAttendanceUpdated -= StateHasChanged;
+    }
+}
